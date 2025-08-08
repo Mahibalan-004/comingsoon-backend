@@ -25,7 +25,12 @@ mongoose.connect(MONGO_URI, {
     process.exit(1); // Exit process if DB fails
   });
 
-// Routes
+// --- Test route for frontend connection check ---
+app.get('/api/some-route', (req, res) => {
+  res.json({ message: 'Hello from the backend!' });
+});
+
+// --- Contact form submission route ---
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, message } = req.body;
@@ -45,10 +50,10 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Health check endpoint
+// --- Health check endpoint ---
 app.get('/', (req, res) => {
   res.send('🚀 Backend API is running');
 });
 
-// Start server
+// --- Start server ---
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
