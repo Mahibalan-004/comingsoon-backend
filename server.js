@@ -9,12 +9,17 @@ const Contact = require('./models/Contact');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/comingsoon';
+const FRONTEND_URL = process.env.FRONTEND_URL || '*'; // Example: https://yourfrontend.vercel.app
 
-// Middleware
-app.use(cors());
+// --- Middleware ---
+app.use(cors({
+  origin: FRONTEND_URL, // Allow only your frontend
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
 app.use(express.json());
 
-// Connect to MongoDB
+// --- Connect to MongoDB ---
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -56,4 +61,7 @@ app.get('/', (req, res) => {
 });
 
 // --- Start server ---
-app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
+  
