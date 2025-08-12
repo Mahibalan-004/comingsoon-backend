@@ -1,5 +1,5 @@
 // server.js
-require('dotenv').config(); // Load environment variables from .env
+require('dotenv').config(); // Load environment variables
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,36 +7,54 @@ const cors = require('cors');
 const Contact = require('./models/Contact');
 
 const app = express();
+
+// --- Config Variables ---
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/comingsoon';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/commingsoon';
 const FRONTEND_URL = process.env.FRONTEND_URL || '*'; // Example: https://yourfrontend.vercel.app
 
 // --- Middleware ---
 app.use(cors({
-  origin: FRONTEND_URL, // Allow only your frontend
+  origin: function (origin, callback) {
+    if (!origin || FRONTEND_URL === '*' || origin === FRONTEND_URL) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed from this origin'));
+    }
+  },
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type']
 }));
+
 app.use(express.json());
 
-// --- Connect to MongoDB ---
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => {
+// --- MongoDB Connection ---
+(async () => {
+  try {
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
-    process.exit(1); // Exit process if DB fails
-  });
+    process.exit(1);
+  }
+})();
 
-// --- Test route for frontend connection check ---
+// --- Routes ---
+// Health check
+app.get('/', (req, res) => {
+  res.send('🚀 Backend API is running');
+});
+
+// Test route
 app.get('/api/some-route', (req, res) => {
   res.json({ message: 'Hello from the backend!' });
 });
 
-// --- Contact form submission route ---
-app.post('/api/contact', async (req, res) => {
+// Contact form submission
+app.post('/api/contact', async (req, res, next) => {
   try {
     const { name, email, message } = req.body;
 
@@ -50,18 +68,17 @@ app.post('/api/contact', async (req, res) => {
 
     res.status(201).json({ message: '✅ Message received successfully!' });
   } catch (err) {
-    console.error("❌ Error saving contact:", err);
-    res.status(500).json({ message: 'Server Error' });
+    next(err);
   }
 });
 
-// --- Health check endpoint ---
-app.get('/', (req, res) => {
-  res.send('🚀 Backend API is running');
+// --- Global Error Handler ---
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err.message);
+  res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-// --- Start server ---
+// --- Start Server ---
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
-  
